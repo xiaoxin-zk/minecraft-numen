@@ -2,6 +2,7 @@ package com.dwinovo.numen.core.task.combat;
 
 import com.dwinovo.numen.core.Constants;
 import com.dwinovo.numen.core.FailureType;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 import com.dwinovo.numen.core.act.Ballistics;
 import com.dwinovo.numen.core.combat.AttackPlan;
 import com.dwinovo.numen.core.combat.Battlefield;
@@ -415,7 +416,7 @@ public final class AttackCompanionTask extends AbstractCompanionTask<AttackTaskR
         if (raised || player.isUsingItem()) {
             return;   // 已经举着,或者手上占着别的东西
         }
-        ItemStack shield = player.getOffhandItem().is(Items.SHIELD)
+        ItemStack shield = ItemCompatibility.isShield(player.getOffhandItem())
                 ? player.getOffhandItem() : equipShield();
         if (shield.isEmpty() || player.getCooldowns().isOnCooldown(shield.getItem())) {
             return;   // 没盾,或者被斧子破了还在冷却 —— 正常跑
@@ -426,7 +427,7 @@ public final class AttackCompanionTask extends AbstractCompanionTask<AttackTaskR
     private boolean shieldRaised() {
         return player.isUsingItem()
                 && player.getUsedItemHand() == InteractionHand.OFF_HAND
-                && player.getUseItem().is(Items.SHIELD);
+                && ItemCompatibility.isShield(player.getUseItem());
     }
 
     /**
@@ -441,7 +442,7 @@ public final class AttackCompanionTask extends AbstractCompanionTask<AttackTaskR
         var inventory = player.getInventory();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
-            if (stack.is(Items.SHIELD)) {
+            if (ItemCompatibility.isShield(stack)) {
                 ItemStack shield = stack.split(1);
                 player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, shield);
                 player.inventoryMenu.broadcastChanges();

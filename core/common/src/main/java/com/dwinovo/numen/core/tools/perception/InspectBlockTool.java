@@ -33,7 +33,9 @@ public final class InspectBlockTool implements NumenTool {
     public String description() {
         return "Inspect a single block at the given integer coordinates. Returns block id, its "
                 + "block-state properties when any (e.g. an end_portal_frame's has_eye/facing), "
-                + "hardness, whether you have the correct tool in hand, an estimated dig-tick count, "
+                + "generic crop growth/growth_max/mature fields when present, and a clone_item hint "
+                + "when the block exposes its planting item, hardness, whether you have the correct "
+                + "tool in hand, an estimated dig-tick count, "
                 + "and whether the block is in your 4.5-block mining reach. Call this before mine "
                 + "to confirm the operation will succeed, or to check which end_portal_frame cells "
                 + "still need an ender_eye.";

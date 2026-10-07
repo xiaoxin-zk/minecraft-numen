@@ -1,5 +1,6 @@
 package com.dwinovo.numen.core.tools;
 
+import com.dwinovo.numen.core.block.CropCompatibility;
 import com.dwinovo.numen.entity.NumenPlayer;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
@@ -59,6 +60,26 @@ int z,
         float hardness = state.getDestroySpeed(self.level(), pos);
         root.addProperty("hardness", hardness);
         root.addProperty("unbreakable", hardness < 0);
+
+        // Expose common crop growth properties without enumerating mod ids.  The
+        // model can inspect a mod crop and decide whether to harvest or plant it.
+        int growth = CropCompatibility.growth(state);
+        if (growth >= 0) {
+            root.addProperty("growth", growth);
+            root.addProperty("growth_max", CropCompatibility.maxGrowth(state));
+            root.addProperty("mature", CropCompatibility.isMature(state));
+        }
+        if (!state.isAir()) {
+            try {
+                ItemStack clone = state.getBlock().getCloneItemStack(self.level(), pos, state);
+                if (!clone.isEmpty()) {
+                    root.addProperty("clone_item",
+                            BuiltInRegistries.ITEM.getKey(clone.getItem()).toString());
+                }
+            } catch (RuntimeException ignored) {
+                // Some block entities cannot answer a clone query without extra context.
+            }
+        }
 
         boolean needsTool = state.requiresCorrectToolForDrops();
         root.addProperty("needs_correct_tool", needsTool);

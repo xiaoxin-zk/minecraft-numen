@@ -41,7 +41,8 @@ public final class ScanBlocksTool implements NumenTool {
                 + "Sees terrain that is loaded right now; anything further out is UNKNOWN, not empty, and "
                 + "note says when that happened — walk that way and scan again. Water and lava are scannable, "
                 + "and those matches carry source:true/false (a source cell behaves very differently from "
-                + "flowing). Give every variant of what you want, e.g. both iron_ore and deepslate_iron_ore.";
+                + "flowing). Crop matches also carry growth/growth_max/mature when available. Give every "
+                + "variant of what you want, e.g. both iron_ore and deepslate_iron_ore.";
     }
 
     @Override

@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.CarpetBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.EndPortalBlock;
 import net.minecraft.world.level.block.FallingBlock;
+import net.minecraft.world.level.block.FarmBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.InfestedBlock;
@@ -40,10 +41,8 @@ import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.block.state.properties.StairsShape;
 import net.minecraft.world.level.material.FlowingFluid;
-import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.material.WaterFluid;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -177,7 +176,7 @@ public final class MovementHelper {
             if (!up.getFluidState().isEmpty() || up.getBlock() instanceof WaterlilyBlock) {
                 return false; // 上方还有流体/睡莲,穿过去等于潜水
             }
-            return fluidState.getType() instanceof WaterFluid; // 只有水柱可游走
+            return fluidState.is(FluidTags.WATER); // 只有水柱可游走
         }
 
         return state.isPathfindable(net.minecraft.world.level.EmptyBlockGetter.INSTANCE, net.minecraft.core.BlockPos.ZERO, PathComputationType.LAND);
@@ -275,7 +274,9 @@ public final class MovementHelper {
         if (block == Blocks.LADDER || (block == Blocks.VINE && NavSettings.get().allowVines)) {
             return Ternary.YES;
         }
-        if (block == Blocks.FARMLAND || block == Blocks.DIRT_PATH || block == Blocks.SOUL_SAND) {
+        if (block instanceof FarmBlock
+                || block instanceof net.minecraft.world.level.block.DirtPathBlock
+                || block == Blocks.SOUL_SAND) {
             return Ternary.YES;
         }
         if (block == Blocks.ENDER_CHEST || block == Blocks.CHEST || block == Blocks.TRAPPED_CHEST) {
@@ -316,7 +317,9 @@ public final class MovementHelper {
             if (up == Blocks.LILY_PAD || up instanceof CarpetBlock) {
                 return true;
             }
-            if (isFlowing(view, x, y, z, state) || upState.getFluidState().getType() == Fluids.FLOWING_WATER) {
+            if (isFlowing(view, x, y, z, state)
+                    || (upState.getFluidState().is(FluidTags.WATER)
+                    && !upState.getFluidState().isSource())) {
                 // 流水上唯一能站的情形:压在静水下面且未开水面行走
                 return isWater(upState) && !NavSettings.get().assumeWalkOnWater;
             }
@@ -333,8 +336,8 @@ public final class MovementHelper {
     /** 霜行者能否把该格冻成冰面(静水源且有附魔)。 */
     public static boolean canUseFrostWalker(CalculationContext context, BlockState state) {
         return context.frostWalker != 0
-                && state.getBlock() == Blocks.WATER
-                && state.getValue(LiquidBlock.LEVEL) == 0;
+                && state.getFluidState().is(FluidTags.WATER)
+                && state.getFluidState().isSource();
     }
 
     /**
@@ -617,14 +620,12 @@ public final class MovementHelper {
 
     /** 是否为水(含流动态)。 */
     public static boolean isWater(BlockState state) {
-        Fluid f = state.getFluidState().getType();
-        return f == Fluids.WATER || f == Fluids.FLOWING_WATER;
+        return state.getFluidState().is(FluidTags.WATER);
     }
 
     /** 是否为岩浆(含流动态)。 */
     public static boolean isLava(BlockState state) {
-        Fluid f = state.getFluidState().getType();
-        return f == Fluids.LAVA || f == Fluids.FLOWING_LAVA;
+        return state.getFluidState().is(FluidTags.LAVA);
     }
 
     /** 是否为任意液体。 */

@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.dwinovo.numen.core.pathing.settings.NavSettings;
 import com.dwinovo.numen.core.pathing.util.BlockHelper;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
@@ -36,7 +37,6 @@ import static com.dwinovo.numen.core.pathing.moves.ActionCosts.COST_INF;
  */
 public class CalculationContext {
 
-    private static final ItemStack STACK_BUCKET_WATER = new ItemStack(Items.WATER_BUCKET);
 
     /** 视图是否可在 worker 线程安全读取(冻结快照 true,活世界 false)。 */
     public final boolean safeForThreadedUse;
@@ -195,8 +195,7 @@ public class CalculationContext {
             // (空手或带 TOOL 组件的挖掘工具),否则右键走主手放不出副手方块
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = inv.getItem(i);
-                if (stack.isEmpty() || stack.getItem() instanceof net.minecraft.world.item.TieredItem
-                        || stack.getItem() instanceof net.minecraft.world.item.ShearsItem) {
+                if (ItemCompatibility.isNonConsumptiveMainHand(stack)) {
                     return true;
                 }
             }
@@ -214,8 +213,10 @@ public class CalculationContext {
 
     /** 快捷栏里是否有(物品与组件都相同的)水桶。 */
     private static boolean hotbarHasWaterBucket(ServerPlayer player) {
-        return net.minecraft.world.entity.player.Inventory.isHotbarSlot(
-                player.getInventory().findSlotMatchingItem(STACK_BUCKET_WATER));
+        for (int slot = 0; slot < 9; slot++) {
+            if (ItemCompatibility.isWaterBucket(player.getInventory().getItem(slot))) return true;
+        }
+        return false;
     }
 
     /** 装备槽遍历顺序中最后一件带霜行者附魔的等级。 */

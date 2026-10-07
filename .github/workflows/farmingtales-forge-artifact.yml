@@ -1,0 +1,44 @@
+name: FarmingTales Forge artifact
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["1.20.1"]
+
+permissions:
+  contents: read
+
+jobs:
+  forge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Read Java version
+        id: props
+        shell: bash
+        run: echo "java_version=$(grep -E '^java_version=' gradle.properties | head -n1 | cut -d= -f2-)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ steps.props.outputs.java_version }}
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Generate tags and resources
+        run: ./gradlew -Pskip_fabric datagenAll --no-daemon -x javadoc
+
+      - name: Build Forge jar
+        run: ./gradlew -Pskip_fabric :core:forge:reobfJarJar --no-daemon -x javadoc
+
+      - name: Upload FarmingTales compatible mod
+        uses: actions/upload-artifact@v4
+        with:
+          name: numen-forge-1.20.1-farmingtales-${{ github.sha }}
+          path: core/forge/build/libs/*-all.jar
+          if-no-files-found: error
+          retention-days: 30

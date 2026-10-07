@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.CarpetBlock;
 import net.minecraft.world.level.block.CauldronBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FallingBlock;
+import net.minecraft.world.level.block.FarmBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
@@ -209,7 +210,9 @@ public final class BlockHelper {
         // Explicit allow-list: blocks that are NOT full collision
         // cubes but are still safe to stand on. The generic full-cube test below would
         // miss these (farmland/path are 15/16 tall, chests/ladders/azalea aren't cubes).
-        if (state.is(Blocks.FARMLAND) || state.is(Blocks.DIRT_PATH) || state.is(Blocks.SOUL_SAND)) return true;
+        if (state.getBlock() instanceof FarmBlock
+                || state.getBlock() instanceof net.minecraft.world.level.block.DirtPathBlock
+                || state.is(Blocks.SOUL_SAND)) return true;
         if (state.is(Blocks.CHEST) || state.is(Blocks.TRAPPED_CHEST) || state.is(Blocks.ENDER_CHEST)) return true;
         if (state.is(Blocks.GLASS) || state.getBlock() instanceof StainedGlassBlock) return true;
         if (state.is(Blocks.LADDER)) return true;

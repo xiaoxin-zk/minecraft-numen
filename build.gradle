@@ -14,7 +14,9 @@ plugins {
 // 各模块继承它。api 曾经走自己的版本线,代价是没人答得上"哪个 api 配哪个模组"——
 // 得有张兼容表,而那张表不存在。锁步之后这个问题不成立:模组 0.1.3 就配 api 0.1.3。
 allprojects { ext.mod_id = 'numen' }
-['api:common', 'api:fabric', 'api:forge'].each { path ->
+def forgeOnly = gradle.startParameter.projectProperties.containsKey('skip_fabric')
+def apiLoaders = forgeOnly ? ['common', 'forge'] : ['common', 'fabric', 'forge']
+apiLoaders.collect { "api:${it}" }.each { path ->
     project(path) {
         ext.mod_id = 'numen_api'
         // 内部模块身份必须与 core 家族区分:两家子项目同名(common/fabric/forge),
@@ -35,7 +37,7 @@ tasks.register('datagenAll') {
     group = 'build'
     description = '跑齐 api 与 core 两家、本分支两个 loader 的数据生成'
     ['api', 'core'].each { family ->
-        dependsOn ":${family}:fabric:runDatagen"
+        if (!forgeOnly) dependsOn ":${family}:fabric:runDatagen"
         // NeoForge 是 moddev 的 runData,Forge 是 ForgeGradle 的 Data
         dependsOn ":${family}:${secondLoader}:${secondLoader == 'neoforge' ? 'runData' : 'Data'}"
     }
@@ -50,7 +52,7 @@ tasks.register('publishAll') {
     dependsOn ':ai:publish'
     dependsOn ':ui:publish'
     ['api', 'core'].each { family ->
-        ['common', 'fabric', secondLoader].each { dependsOn ":${family}:${it}:publish" }
+        (forgeOnly ? ['common', secondLoader] : ['common', 'fabric', secondLoader]).each { dependsOn ":${family}:${it}:publish" }
     }
 }
 
@@ -70,7 +72,7 @@ tasks.register('releaseJars', Sync) {
     into layout.buildDirectory.dir('release')
     doFirst {
         ['api', 'core'].each { family ->
-            ['fabric', secondLoader].each { loader ->
+            (forgeOnly ? [secondLoader] : ['fabric', secondLoader]).each { loader ->
                 def dir = project(":${family}:${loader}").file('src/generated/resources')
                 def generated = dir.isDirectory() ? fileTree(dir) { exclude '.cache/**' }.files : []
                 if (generated.isEmpty()) {
@@ -87,7 +89,7 @@ tasks.register('releaseJars', Sync) {
         neoforge: { p -> p.tasks.getByName('jar') },
         forge   : { p -> p.tasks.getByName('jarJar') },
     ]
-    ['fabric', secondLoader].each { loader ->
+    (forgeOnly ? [secondLoader] : ['fabric', secondLoader]).each { loader ->
         from({ shipped[loader](project(":core:${loader}")) }) { into loader }
     }
     // Forge 的成品还要过一道 reobf(official 名换成 SRG 名),它原地改写 jarJar 的产物,

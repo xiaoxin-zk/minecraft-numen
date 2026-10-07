@@ -1,10 +1,10 @@
 package com.dwinovo.numen.core.combat;
 
 import com.dwinovo.numen.entity.NumenPlayer;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 
@@ -69,7 +69,8 @@ public final class Loadout {
             if (stack.isEmpty()) {
                 continue;
             }
-            if (stack.getItem() instanceof CrossbowItem) {
+            if (ItemCompatibility.isCrossbow(stack)
+                    && stack.getItem() instanceof CrossbowItem) {
                 if (CrossbowItem.isCharged(stack)) {
                     if (chargedCrossbow == null) {
                         chargedCrossbow = new Pick(slot, stack, 0.0);
@@ -79,7 +80,10 @@ public final class Loadout {
                 }
                 continue;
             }
-            if (stack.getItem() instanceof BowItem) {
+            // A few Forge bows implement the native use contract without
+            // extending BowItem. The projectile check keeps ordinary tagged
+            // tools from being treated as weapons while allowing those bows.
+            if (ItemCompatibility.isBow(stack)) {
                 if (bow == null && !player.getProjectile(stack).isEmpty()) {
                     bow = new Pick(slot, stack, 0.0);
                 }

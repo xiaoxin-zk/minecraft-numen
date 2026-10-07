@@ -77,7 +77,7 @@ public class MovementTraverse extends Movement {
                     WC += (WALK_ONE_OVER_SOUL_SAND_COST - WALK_ONE_BLOCK_COST) / 2;
                 } else if (frostWalker) {
                     // 霜行者冻出的冰面走起来没有水面罚金
-                } else if (destOn.getBlock() == Blocks.WATER) {
+                } else if (MovementHelper.isWater(destOn)) {
                     WC += context.walkOnWaterOnePenalty;
                 }
                 if (srcDownBlock == Blocks.SOUL_SAND) {

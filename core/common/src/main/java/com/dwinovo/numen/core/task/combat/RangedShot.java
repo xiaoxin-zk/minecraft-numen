@@ -3,6 +3,7 @@ package com.dwinovo.numen.core.task.combat;
 import com.dwinovo.numen.core.Constants;
 import com.dwinovo.numen.core.act.Ballistics;
 import com.dwinovo.numen.core.combat.Loadout;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 import com.dwinovo.numen.entity.NumenPlayer;
 
 import net.minecraft.world.InteractionHand;
@@ -53,7 +54,7 @@ final class RangedShot {
 
     /** 这一发的武器还是不是手上这把——换了就得作废重来。 */
     static boolean stillHolding(boolean crossbow, ItemStack stack) {
-        return crossbow ? stack.getItem() instanceof CrossbowItem : stack.getItem() instanceof BowItem;
+        return crossbow ? ItemCompatibility.isCrossbow(stack) : ItemCompatibility.isBow(stack);
     }
 
     /** 拉弓的刻数换算成箭速倍率(原版公式)。 */
@@ -170,6 +171,6 @@ final class RangedShot {
 
     /** 这一发用的是不是弩(决定箭速与哑火判定)。 */
     static boolean isCrossbow(Loadout.Pick pick) {
-        return pick.stack().getItem() instanceof CrossbowItem;
+        return ItemCompatibility.isCrossbow(pick.stack());
     }
 }

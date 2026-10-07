@@ -2,6 +2,7 @@ package com.dwinovo.numen.core.task.chain;
 
 import com.dwinovo.numen.core.act.Interaction;
 import com.dwinovo.numen.core.WorkProfile;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 import com.dwinovo.numen.task.Task;
 import com.dwinovo.numen.task.TaskState;
 import com.dwinovo.numen.core.task.survival.SurvivalDecisions;
@@ -15,7 +16,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.LiquidBlockContainer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.material.Fluids;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -86,11 +87,11 @@ public final class MLGChain implements Task, com.dwinovo.numen.task.reflex.Refle
         if (placed == null || reclaimTicks <= 0) {
             return false;
         }
-        if (slotWith(companion, Items.BUCKET) < 0 || waterBucketSlot(companion) >= 0) {
+        if (emptyBucketSlot(companion) < 0 || waterBucketSlot(companion) >= 0) {
             return false;   // 没空桶可装,或者已经收到手了
         }
         BlockState state = companion.level().getBlockState(placed);
-        return state.getFluidState().getType() == Fluids.WATER
+        return state.getFluidState().is(FluidTags.WATER)
                 && state.getFluidState().isSource();
     }
 
@@ -155,7 +156,7 @@ public final class MLGChain implements Task, com.dwinovo.numen.task.reflex.Refle
         if (aim.getType() != HitResult.Type.BLOCK || !aim.getBlockPos().equals(placed)) {
             return TaskState.RUNNING;
         }
-        int empty = slotWith(companion, Items.BUCKET);
+        int empty = emptyBucketSlot(companion);
         if (empty >= 0) {
             companion.holdInHand(empty);
             Interaction.useInAir(companion, InteractionHand.MAIN_HAND,
@@ -249,13 +250,25 @@ public final class MLGChain implements Task, com.dwinovo.numen.task.reflex.Refle
     }
 
     private static int waterBucketSlot(NumenPlayer companion) {
-        return slotWith(companion, Items.WATER_BUCKET);
+        Inventory inv = companion.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            if (ItemCompatibility.isWaterBucket(inv.getItem(i))) return i;
+        }
+        return -1;
     }
 
     private static int slotWith(NumenPlayer companion, net.minecraft.world.item.Item item) {
         Inventory inv = companion.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             if (inv.getItem(i).is(item)) return i;
+        }
+        return -1;
+    }
+
+    private static int emptyBucketSlot(NumenPlayer companion) {
+        Inventory inv = companion.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            if (ItemCompatibility.isEmptyBucket(inv.getItem(i))) return i;
         }
         return -1;
     }

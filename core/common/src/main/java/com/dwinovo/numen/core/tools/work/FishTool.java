@@ -31,7 +31,10 @@ public final class FishTool implements NumenTool {
 
     @Override
     public String description() {
-        return "Fish repeatedly from nearby water. Requires a vanilla fishing rod in inventory. "
+        return "Fish repeatedly from nearby water (and Tide-supported fluids such as lava). Requires a fishing "
+                + "rod in inventory; vanilla and modded rods that extend FishingRodItem or carry the "
+                + "Forge/Common/Tide fishing-rod tag are supported. Tide rods use the server-side catch path "
+                + "so the client fishing minigame is not required. "
                 + "If currently in water, moves up to 12 blocks onto a safe dry fishing stance; "
                 + "it does not search long-distance for a biome or water body. `count` is successful bites reeled in; "
                 + "vanilla fishing may produce fish, junk, or treasure. Uses native casting, loot, "

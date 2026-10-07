@@ -14,6 +14,7 @@ import com.dwinovo.numen.core.pathing.moves.MovementState;
 import com.dwinovo.numen.core.pathing.moves.MovementStatus;
 import com.dwinovo.numen.core.pathing.moves.MutableMoveResult;
 import com.dwinovo.numen.core.pathing.settings.NavSettings;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,7 +26,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LadderBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.WaterFluid;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.phys.Vec3;
 
 import static com.dwinovo.numen.core.pathing.moves.ActionCosts.COST_INF;
@@ -84,9 +85,9 @@ public class MovementFall extends Movement {
         float toDestYaw = AimGeometry.yawTo(eye, destCenter);
         boolean forcedRotation = false;
         BlockState destState = level.getBlockState(dest);
-        boolean isWater = destState.getFluidState().getType() instanceof WaterFluid;
+        boolean isWater = destState.getFluidState().is(FluidTags.WATER);
         if (!isWater && willPlaceBucket() && !feet.equals(dest)) {
-            int bucketSlot = hotbarSlotWith(Items.WATER_BUCKET);
+            int bucketSlot = hotbarWaterBucketSlot();
             if (bucketSlot == -1 || level.dimension() == Level.NETHER) {
                 return state.setStatus(MovementStatus.UNREACHABLE);
             }
@@ -109,7 +110,7 @@ public class MovementFall extends Movement {
         if (feet.equals(dest) && (player.getY() - feet.getY() < 0.094 || isWater)) { // 睡莲容差
             if (isWater) {
                 // 落进自己放的水:收水再走
-                int emptySlot = hotbarSlotWith(Items.BUCKET);
+                int emptySlot = hotbarEmptyBucketSlot();
                 if (emptySlot != -1) {
                     player.getInventory().selected = emptySlot;
                     if (player.getDeltaMovement().y >= 0) {
@@ -203,5 +204,19 @@ public class MovementFall extends Movement {
             }
         }
         return true;
+    }
+
+    private int hotbarWaterBucketSlot() {
+        for (int slot = 0; slot < 9; slot++) {
+            if (ItemCompatibility.isWaterBucket(player.getInventory().getItem(slot))) return slot;
+        }
+        return -1;
+    }
+
+    private int hotbarEmptyBucketSlot() {
+        for (int slot = 0; slot < 9; slot++) {
+            if (ItemCompatibility.isEmptyBucket(player.getInventory().getItem(slot))) return slot;
+        }
+        return -1;
     }
 }

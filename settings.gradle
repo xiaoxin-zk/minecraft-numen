@@ -45,13 +45,18 @@ plugins {
 
 rootProject.name = 'Numen'
 include('core:common')
-include('core:fabric')
 include('core:forge')
 include('api:common')
-include('api:fabric')
 include('api:forge')
 include('ai')
 include('ui')
+
+// Forge-only builds do not need Fabric Loom or its separate Minecraft download.
+// Pass -Pskip_fabric when producing the Forge artifact for a Forge modpack.
+if (!gradle.startParameter.projectProperties.containsKey('skip_fabric')) {
+    include('core:fabric')
+    include('api:fabric')
+}
 
 // 联动模块:一个联动一个,内嵌发布不单独发坐标。见 buildSrc 的 numen-plugin.gradle
 include('plugins:ysm')

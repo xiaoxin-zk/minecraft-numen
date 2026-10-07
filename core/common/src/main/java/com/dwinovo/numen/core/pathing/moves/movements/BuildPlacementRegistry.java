@@ -4,6 +4,7 @@ import com.dwinovo.numen.core.pathing.settings.ScaffoldMaterials;
 import com.dwinovo.numen.core.pathing.settings.NavSettings;
 import com.dwinovo.numen.entity.NumenPlayer;
 import com.dwinovo.numen.core.build.BuildValidity;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -110,9 +111,7 @@ public final class BuildPlacementRegistry {
             // 建材在副手:选一个空/工具主手槽,让右键走副手放置(顺序 快捷栏→副手→背包)。
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = inv.getItem(i);
-                if (stack.isEmpty()
-                        || stack.getItem() instanceof net.minecraft.world.item.TieredItem
-                        || stack.getItem() instanceof net.minecraft.world.item.ShearsItem) {
+                    if (ItemCompatibility.isNonConsumptiveMainHand(stack)) {
                     if (select) {
                         inv.selected = i;
                     }
@@ -187,9 +186,7 @@ public final class BuildPlacementRegistry {
                     && wouldPlaceAny(player, offhand, hit, yaw, pitch, InteractionHand.OFF_HAND)) {
                 for (int i = 0; i < 9; i++) {
                     ItemStack stack = inventory.getItem(i);
-                    if (stack.isEmpty()
-                            || stack.getItem() instanceof net.minecraft.world.item.TieredItem
-                        || stack.getItem() instanceof net.minecraft.world.item.ShearsItem) {
+                    if (ItemCompatibility.isNonConsumptiveMainHand(stack)) {
                         if (select) {
                             inventory.selected = i;
                         }

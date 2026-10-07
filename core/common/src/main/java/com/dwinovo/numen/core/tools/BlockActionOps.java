@@ -7,9 +7,11 @@ import com.dwinovo.numen.core.task.interact.InteractAtTaskRecord;
 import com.dwinovo.numen.core.task.interact.InteractEntityTaskRecord;
 import com.dwinovo.numen.core.task.mine.MineBlockTaskRecord;
 import com.dwinovo.numen.core.task.MouseButton;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 
 import java.util.List;
@@ -61,6 +63,7 @@ Integer y,
 Integer z,
 Integer hold_ticks,
 String item_id,
+Boolean sneak,
             ToolContext ctx) {
         MouseButton buttonVal = ToolParse.parseButton(button);
         int holdTicks = hold_ticks == null ? 0 : hold_ticks;
@@ -78,7 +81,18 @@ String item_id,
         if (bodyBound != null) {
             throw new IllegalArgumentException(bodyBound);
         }
-        return new InteractAtTaskRecord(ctx.toolCallId(), ctx.deadline(INTERACT_AT_TIMEOUT_TICKS), buttonVal, aim, holdTicks, item);
+        // FarmingTales packets unpack on a crouched in-air right click; aiming
+        // at a sprinkler is left standing so its bulk-plant action still runs.
+        boolean crouch = Boolean.TRUE.equals(sneak)
+                || (buttonVal == MouseButton.RIGHT && aim == null && item != null
+                && ItemCompatibility.isSeedLike(new ItemStack(item)));
+        return new InteractAtTaskRecord(ctx.toolCallId(), ctx.deadline(INTERACT_AT_TIMEOUT_TICKS),
+                buttonVal, aim, holdTicks, item, crouch);
+    }
+
+    public TaskRecord interactAt(String button, Integer x, Integer y, Integer z,
+                                 Integer hold_ticks, String item_id, ToolContext ctx) {
+        return interactAt(button, x, y, z, hold_ticks, item_id, false, ctx);
     }
 
     public TaskRecord interactEntity(
@@ -93,4 +107,3 @@ String item_id,
                 item_id == null ? null : ToolArgs.parseItem(item_id));
     }
 }
-

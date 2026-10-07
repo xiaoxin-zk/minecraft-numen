@@ -95,7 +95,7 @@ public class MovementDiagonal extends Movement {
             multiplier += (WALK_ONE_OVER_SOUL_SAND_COST - WALK_ONE_BLOCK_COST) / 2;
         } else if (frostWalker) {
             // 霜行者冻出的冰面无罚
-        } else if (destWalkOn.getBlock() == Blocks.WATER) {
+        } else if (MovementHelper.isWater(destWalkOn)) {
             multiplier += context.walkOnWaterOnePenalty * SQRT_2;
         }
         Block fromDownBlock = fromDown.getBlock();
@@ -161,7 +161,7 @@ public class MovementDiagonal extends Movement {
             return;
         }
         BlockState pb3 = context.get(destX, y + 1, z);
-        if (optionA == 0 && ((MovementHelper.avoidWalkingInto(pb2) && pb2.getBlock() != Blocks.WATER)
+        if (optionA == 0 && ((MovementHelper.avoidWalkingInto(pb2) && !MovementHelper.isWater(pb2))
                 || MovementHelper.avoidWalkingInto(pb3))) {
             // A 侧通畅时要从 B 侧绕:B 侧不能是危险格(水除外)
             return;
@@ -170,7 +170,7 @@ public class MovementDiagonal extends Movement {
         if (optionA != 0 && optionB != 0) {
             return;
         }
-        if (optionB == 0 && ((MovementHelper.avoidWalkingInto(pb0) && pb0.getBlock() != Blocks.WATER)
+        if (optionB == 0 && ((MovementHelper.avoidWalkingInto(pb0) && !MovementHelper.isWater(pb0))
                 || MovementHelper.avoidWalkingInto(pb1))) {
             return;
         }

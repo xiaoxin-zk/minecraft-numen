@@ -8,6 +8,7 @@ import com.dwinovo.numen.entity.InputDriver;
 import com.dwinovo.numen.entity.NumenPlayer;
 import com.dwinovo.numen.core.pathing.calc.NavGoal;
 import com.dwinovo.numen.core.FailureType;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 import com.dwinovo.numen.core.act.Interaction;
 import com.dwinovo.numen.core.act.PressReceipt;
 import com.dwinovo.numen.core.pathing.execute.PlayerNav;
@@ -88,6 +89,9 @@ public final class InteractAtCompanionTask extends GoToThenDoTask<InteractAtTask
             if (r.item != null) {
                 player.holdInHand(PlayerInv.findSlot(player.getInventory(), r.item));
             }
+            boolean seedPacketUnpack = r.aim == null
+                    && ItemCompatibility.isSeedLike(player.getMainHandItem());
+            player.setShiftKeyDown(r.sneak || seedPacketUnpack);
             if (r.aim != null) {
                 InputDriver.lookAt(player, Vec3.atCenterOf(r.aim));
             }
@@ -208,6 +212,7 @@ public final class InteractAtCompanionTask extends GoToThenDoTask<InteractAtTask
     @Override
     protected void cleanup() {
         if (interaction != null) interaction.stop();
+        player.setShiftKeyDown(false);
         super.cleanup();
     }
 

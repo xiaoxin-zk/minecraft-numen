@@ -1,5 +1,7 @@
 package com.dwinovo.numen.core.task.fish;
 import com.dwinovo.numen.core.FailureType;
+import com.dwinovo.numen.core.item.ItemCompatibility;
+import com.dwinovo.numen.core.item.FishingCompatibility;
 
 import com.dwinovo.numen.core.Constants;
 import com.dwinovo.numen.core.mixin.FishingHookAccessor;
@@ -19,7 +21,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.AABB;
@@ -117,7 +118,7 @@ public final class FishCompanionTask extends AbstractCompanionTask<FishTaskRecor
             return TaskState.FAILED;
         }
         player.holdInHand(rodSlot);
-        if (!player.getMainHandItem().is(Items.FISHING_ROD)) return TaskState.RUNNING;
+        if (!isFishingRod(player.getMainHandItem())) return TaskState.RUNNING;
 
         return switch (phase) {
             case POSITION -> throw new IllegalStateException("position phase handled above");
@@ -207,7 +208,7 @@ public final class FishCompanionTask extends AbstractCompanionTask<FishTaskRecor
     }
 
     private TaskState prepare() {
-        if (player.fishing != null) {
+        if (activeHook() != null) {
             discardHook();
             return TaskState.RUNNING;
         }
@@ -254,7 +255,7 @@ public final class FishCompanionTask extends AbstractCompanionTask<FishTaskRecor
         double pitch = castPitchDegrees(player.getEyePosition(), target);
         player.gameMode.useItem(player, player.level(), player.getMainHandItem(), InteractionHand.MAIN_HAND);
         r.castOnce();
-        if (player.fishing == null) {
+        if (activeHook() == null) {
             return failedCast("the fishing rod did not cast", false);
         }
         Constants.LOG.debug("[numen-fish] cast={} target={} pitch={}", r.casts(),
@@ -265,20 +266,24 @@ public final class FishCompanionTask extends AbstractCompanionTask<FishTaskRecor
     }
 
     private TaskState waitForBite() {
+        Object tideHook = FishingCompatibility.tideHook(player);
         FishingHook hook = player.fishing;
-        if (hook == null || hook.isRemoved()) {
+        if (tideHook == null && (hook == null || hook.isRemoved())) {
             return failedCast("the fishing hook disappeared before a catch", false);
         }
         phaseTicks++;
 
-        Entity hooked = hook.getHookedIn();
+        Entity hooked = tideHook != null
+                ? FishingCompatibility.hookedEntity(tideHook) : hook.getHookedIn();
         if (hooked != null) {
             reelIn();
             return failedCast("the hook caught an entity instead of landing cleanly", true);
         }
 
-        int nibble = ((FishingHookAccessor) (Object) hook).numen$getNibble();
-        if (isBiteWindow(nibble)) {
+        boolean biting = tideHook != null
+                ? FishingCompatibility.isBiting(tideHook)
+                : isBiteWindow(((FishingHookAccessor) (Object) hook).numen$getNibble());
+        if (biting) {
             beginLootCollection();
             r.caughtOne();
             Constants.LOG.debug("[numen-fish] caught={}/{} casts={}",
@@ -286,10 +291,12 @@ public final class FishCompanionTask extends AbstractCompanionTask<FishTaskRecor
             return TaskState.RUNNING;
         }
 
-        boolean inWater = hook.level().getFluidState(hook.blockPosition()).is(FluidTags.WATER);
-        if (!inWater && phaseTicks >= CAST_SETTLE_TIMEOUT) {
+        Entity hookEntity = tideHook instanceof Entity entity ? entity : hook;
+        var hookFluid = hookEntity.level().getFluidState(hookEntity.blockPosition());
+        boolean inFishableFluid = !hookFluid.isEmpty();
+        if (!inFishableFluid && phaseTicks >= CAST_SETTLE_TIMEOUT) {
             Constants.LOG.debug("[numen-fish] miss hook={} on_ground={} age={}",
-                    hook.blockPosition().toShortString(), hook.onGround(), phaseTicks);
+                    hookEntity.blockPosition().toShortString(), hookEntity.onGround(), phaseTicks);
             return failedCast("the fishing hook did not settle in water", true);
         }
         if (phaseTicks >= CAST_LIFETIME) {
@@ -461,19 +468,29 @@ public final class FishCompanionTask extends AbstractCompanionTask<FishTaskRecor
     }
 
     private void reelIn() {
-        if (player.fishing != null && player.getMainHandItem().is(Items.FISHING_ROD)) {
+        if (FishingCompatibility.retrieve(player)) return;
+        if (player.fishing != null && isFishingRod(player.getMainHandItem())) {
             player.gameMode.useItem(player, player.level(), player.getMainHandItem(),
                     InteractionHand.MAIN_HAND);
         }
+    }
+
+    private Object activeHook() {
+        Object tideHook = FishingCompatibility.tideHook(player);
+        return tideHook != null ? tideHook : player.fishing;
     }
 
     private int findRodSlot() {
         var inventory = player.getInventory();
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
-            if (stack.is(Items.FISHING_ROD)) return i;
+            if (isFishingRod(stack)) return i;
         }
         return -1;
+    }
+
+    private static boolean isFishingRod(ItemStack stack) {
+        return ItemCompatibility.isFishingRod(stack);
     }
 
     private BlockPos findCastTarget(BlockPos fromStance, Vec3 eye) {
@@ -518,8 +535,11 @@ public final class FishCompanionTask extends AbstractCompanionTask<FishTaskRecor
 
     private boolean isCastableSurface(BlockPos pos) {
         var fluid = player.level().getFluidState(pos);
-        if (!fluid.is(FluidTags.WATER) || !fluid.isSource()) return false;
-        if (player.level().getFluidState(pos.above()).is(FluidTags.WATER)) return false;
+        boolean water = fluid.is(FluidTags.WATER);
+        boolean tideFluid = FishingCompatibility.isTideRod(player.getMainHandItem())
+                && !fluid.isEmpty();
+        if ((!water && !tideFluid) || !fluid.isSource()) return false;
+        if (!player.level().getFluidState(pos.above()).isEmpty()) return false;
         return player.level().getBlockState(pos.above())
                 .getCollisionShape(player.level(), pos.above()).isEmpty();
     }
@@ -645,6 +665,7 @@ public final class FishCompanionTask extends AbstractCompanionTask<FishTaskRecor
     }
 
     private void discardHook() {
+        FishingCompatibility.discard(player);
         FishingHook hook = player.fishing;
         if (hook != null) {
             hook.discard();

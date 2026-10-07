@@ -37,7 +37,9 @@ public final class AutoMineTool implements NumenTool {
                 + "needed tier if nothing qualifies (to destroy blocks regardless of drops, use "
                 + "break_block). BACKGROUND: a successful call is already running; do not call mine/goto "
                 + "again while <current_task> exists and do not poll. task_finished status=done means the "
-                + "requested count is complete; only timeout permits resending the same arguments.";
+                + "requested count is complete; only timeout permits resending the same arguments. Crop "
+                + "blocks are valid too: inspect a crop for mature:true, mine mature plants, then use "
+                + "interact_at with its seed/item on the farmland to replant.";
     }
 
 

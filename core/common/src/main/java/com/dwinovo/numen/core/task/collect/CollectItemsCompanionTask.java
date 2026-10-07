@@ -3,6 +3,7 @@ package com.dwinovo.numen.core.task.collect;
 import com.dwinovo.numen.task.TaskState;
 
 import com.dwinovo.numen.entity.NumenPlayer;
+import com.dwinovo.numen.core.pathing.calc.NavGoal;
 import com.dwinovo.numen.core.pathing.execute.PlayerNav;
 import com.dwinovo.numen.core.task.base.AbstractCompanionTask;
 import com.dwinovo.numen.core.task.base.TargetSet;
@@ -33,14 +34,17 @@ import java.util.Map;
  */
 public final class CollectItemsCompanionTask extends AbstractCompanionTask<CollectItemsTaskRecord> {
 
-    private enum Phase { SCAN, APPROACH }
+    private enum Phase { SCAN, APPROACH, PICKUP_WAIT }
 
     private static final double WALK_SPEED = 1.0;
     /** Close enough that vanilla auto-pickup should have absorbed the item (≈1.2 blocks). */
     private static final double PICKUP_REACH_SQR = 1.5;
+    /** Bound the wait when pickup is blocked by a full inventory or a modded delay. */
+    private static final int PICKUP_WAIT_TICKS = 20;
 
     private Phase phase = Phase.SCAN;
     private ItemEntity target;
+    private int pickupWaitTicks;
 
     /** Item-entity ids we reached but couldn't absorb, so SCAN won't loop on them. */
     private final TargetSet<ItemEntity> skipped = new TargetSet<>(ItemEntity::getId);
@@ -52,6 +56,9 @@ public final class CollectItemsCompanionTask extends AbstractCompanionTask<Colle
     @Override
     protected void onStart() {
         this.phase = Phase.SCAN;
+        this.target = null;
+        this.pickupWaitTicks = 0;
+        this.skipped.reset();
     }
 
     @Override
@@ -62,6 +69,7 @@ public final class CollectItemsCompanionTask extends AbstractCompanionTask<Colle
         return switch (phase) {
             case SCAN -> tickScan();
             case APPROACH -> tickApproach();
+            case PICKUP_WAIT -> tickPickupWait();
         };
     }
 
@@ -73,7 +81,8 @@ public final class CollectItemsCompanionTask extends AbstractCompanionTask<Colle
             return TaskState.SUCCESS;
         }
         target = best;
-        nav = new PlayerNav(player, this::targetCell, WALK_SPEED, this::picked);
+        pickupWaitTicks = 0;
+        nav = newItemNav();
         phase = Phase.APPROACH;
         return TaskState.RUNNING;
     }
@@ -84,30 +93,83 @@ public final class CollectItemsCompanionTask extends AbstractCompanionTask<Colle
             if (target != null) {
                 r.incrementCollected();
             }
+            target = null;
+            pickupWaitTicks = 0;
             stopNav();
             phase = Phase.SCAN;
             return TaskState.RUNNING;
+        }
+        if (player.distanceToSqr(target) <= PICKUP_REACH_SQR) {
+            stopNav();
+            phase = Phase.PICKUP_WAIT;
+            return TaskState.RUNNING;
+        }
+        if (nav == null) {
+            nav = newItemNav();
         }
         switch (nav.tick()) {
             case RUNNING -> { /* walking to it */ }
             case ARRIVED -> {
                 // Reached the spot. If it's now absorbed, the removed-branch above
                 // counts it next tick; otherwise we can't pick it up — skip it.
-                if (!target.isRemoved()) {
-                    skipped.skip(target);
-                    target = null;
-                    stopNav();
-                    phase = Phase.SCAN;
-                }
+                stopNav();
+                phase = Phase.PICKUP_WAIT;
             }
             case FAILED -> {                 // can't route to it — abandon
                 if (target != null) skipped.skip(target);
                 target = null;
+                pickupWaitTicks = 0;
                 stopNav();
                 phase = Phase.SCAN;
             }
         }
         return TaskState.RUNNING;
+    }
+
+    private TaskState tickPickupWait() {
+        if (target == null) {
+            phase = Phase.SCAN;
+            return TaskState.RUNNING;
+        }
+        if (target.isRemoved()) {
+            r.incrementCollected();
+            target = null;
+            pickupWaitTicks = 0;
+            phase = Phase.SCAN;
+            return TaskState.RUNNING;
+        }
+
+        // Streams, pistons, and entity collisions can push the item away while
+        // vanilla pickup is being attempted. Resume live navigation in that case.
+        if (player.distanceToSqr(target) > PICKUP_REACH_SQR) {
+            if (++pickupWaitTicks >= PICKUP_WAIT_TICKS) {
+                abandonTarget();
+            } else {
+                nav = newItemNav();
+                phase = Phase.APPROACH;
+            }
+            return TaskState.RUNNING;
+        }
+
+        if (++pickupWaitTicks >= PICKUP_WAIT_TICKS) {
+            abandonTarget();
+        }
+        return TaskState.RUNNING;
+    }
+
+    private void abandonTarget() {
+        if (target != null) skipped.skip(target);
+        target = null;
+        pickupWaitTicks = 0;
+        stopNav();
+        phase = Phase.SCAN;
+    }
+
+    private PlayerNav newItemNav() {
+        return PlayerNav.trackGoal(player, () -> {
+            BlockPos cell = targetCell();
+            return cell == null ? null : NavGoal.exact(cell);
+        }, WALK_SPEED, this::picked);
     }
 
     private BlockPos targetCell() {

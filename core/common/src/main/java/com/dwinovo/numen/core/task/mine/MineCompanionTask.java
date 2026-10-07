@@ -15,6 +15,7 @@ import com.dwinovo.numen.core.act.BlockDigger;
 import com.dwinovo.numen.core.pathing.execute.PlayerNav;
 import com.dwinovo.numen.core.pathing.util.BlockHelper;
 import com.dwinovo.numen.core.pathing.util.NavProfiler;
+import com.dwinovo.numen.core.block.CropCompatibility;
 import com.dwinovo.numen.core.scan.TargetIndex;
 import com.dwinovo.numen.core.task.base.AbstractCompanionTask;
 import com.dwinovo.numen.core.task.base.Precondition;
@@ -773,6 +774,11 @@ public final class MineCompanionTask extends AbstractCompanionTask<MineBlockTask
             if (!WorkProfile.of(player).instaBreak()
                     && !BlockHelper.canHarvest(player.getInventory(), state)) {
                 unharvestable.add(p.immutable());
+                return true;
+            }
+            // Do not destroy a crop that has an explicit growth state before it
+            // is mature. This keeps generic mine requests safe for mod crops.
+            if (CropCompatibility.hasGrowth(state) && !CropCompatibility.isMature(state)) {
                 return true;
             }
             return false;

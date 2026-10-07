@@ -1,6 +1,7 @@
 package com.dwinovo.numen.core.tools;
 
 import com.dwinovo.numen.entity.NumenPlayer;
+import com.dwinovo.numen.core.block.CropCompatibility;
 import com.dwinovo.numen.core.scan.BlockScanner;
 import com.dwinovo.numen.core.scan.BlockSearch;
 import com.google.gson.JsonArray;
@@ -77,6 +78,12 @@ List<String> block_ids,
             o.addProperty("y", s.pos().getY());
             o.addProperty("z", s.pos().getZ());
             o.addProperty("block", BuiltInRegistries.BLOCK.getKey(s.state().getBlock()).toString());
+            int growth = CropCompatibility.growth(s.state());
+            if (growth >= 0) {
+                o.addProperty("growth", growth);
+                o.addProperty("growth_max", CropCompatibility.maxGrowth(s.state()));
+                o.addProperty("mature", CropCompatibility.isMature(s.state()));
+            }
             o.addProperty("distance", s.distance());
             // Source vs flowing is THE decision bit for fluids: obsidian casting
             // and bucket-filling both demand a source cell.

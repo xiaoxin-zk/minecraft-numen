@@ -19,7 +19,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.WaterFluid;
+import net.minecraft.tags.FluidTags;
 
 import static com.dwinovo.numen.core.pathing.moves.ActionCosts.COST_INF;
 import static com.dwinovo.numen.core.pathing.moves.ActionCosts.SPRINT_ONE_BLOCK_COST;
@@ -71,7 +71,7 @@ public class MovementParkour extends Movement {
             // 能直接走过去就不跑酷
             return;
         }
-        if (MovementHelper.avoidWalkingInto(adj) && !(adj.getFluidState().getType() instanceof WaterFluid)) {
+        if (MovementHelper.avoidWalkingInto(adj) && !adj.getFluidState().is(FluidTags.WATER)) {
             return; // 紧邻下方是岩浆之类,过冲危险
         }
         if (!MovementHelper.fullyPassable(context, x + xDiff, y + 1, z + zDiff)) {
@@ -134,7 +134,7 @@ public class MovementParkour extends Movement {
 
             // 平跳落点:禁落耕地(踩塌);霜行者可冻住水面时也算落点
             BlockState landingOn = context.get(destX, y - 1, destZ);
-            if ((landingOn.getBlock() != Blocks.FARMLAND
+            if (!(landingOn.getBlock() instanceof net.minecraft.world.level.block.FarmBlock)
                     && MovementHelper.canWalkOn(context, destX, y - 1, destZ, landingOn))
                     || (Math.min(16, context.frostWalker + 2) >= i
                             && MovementHelper.canUseFrostWalker(context, landingOn))) {
@@ -299,4 +299,3 @@ public class MovementParkour extends Movement {
         return state;
     }
 }
-

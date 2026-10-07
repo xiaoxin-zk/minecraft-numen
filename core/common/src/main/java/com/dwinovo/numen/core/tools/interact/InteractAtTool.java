@@ -18,7 +18,8 @@ public final class InteractAtTool implements NumenTool {
     private static final Gson GSON = new Gson();
     private final BlockActionOps impl = new BlockActionOps();
 
-    private record Args(String button, Integer x, Integer y, Integer z, Integer hold_ticks, String item_id) {}
+    private record Args(String button, Integer x, Integer y, Integer z, Integer hold_ticks,
+                        String item_id, Boolean sneak) {}
 
     @Override
     public String name() {
@@ -29,6 +30,8 @@ public final class InteractAtTool implements NumenTool {
     public String description() {
         return "Aim at a world point and press one mouse button — the full native click for BLOCKS, "
                 + "FLUIDS and the AIR (moving entities use interact_entity). right = use/place/activate; "
+                + "set sneak=true for modded alternate item actions such as FarmingTales seed packets; "
+                + "a packet aimed at farm_and_charm:water_sprinkler stays standing and bulk-plants; "
                 + "if the aimed block doesn't respond, the held item acts on its own, exactly like a real "
                 + "right-click — so aiming at WATER with a bucket scoops it, with a boat places it. "
                 + "left = attack/break (prefer mine for digging). The result reports what actually "
@@ -47,13 +50,14 @@ public final class InteractAtTool implements NumenTool {
                 .nullableInteger("z", "Aim Z. Null when aiming forward.")
                 .nullableInteger("hold_ticks", "0/null = single press; >0 = hold that many ticks; -1 = hold until done/timeout.")
                 .nullableString("item_id", "Optional namespaced item to equip-and-use, e.g. minecraft:bonemeal. Null = use what's in hand.")
+                .optionalBool("sneak", "Hold crouch while pressing use. Defaults to false.")
                 .build();
     }
 
     @Override
     public void onServerCall(String toolCallId, JsonObject args, NumenPlayer companion, Consumer<String> reply) {
         Args a = GSON.fromJson(args, Args.class);
-        runSync(companion, impl.interactAt(a.button(), a.x(), a.y(), a.z(), a.hold_ticks(), a.item_id(),
+        runSync(companion, impl.interactAt(a.button(), a.x(), a.y(), a.z(), a.hold_ticks(), a.item_id(), a.sneak(),
                 ctx(toolCallId, companion)), reply);
     }
 }

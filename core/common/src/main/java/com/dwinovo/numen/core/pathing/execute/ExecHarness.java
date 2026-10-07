@@ -1,5 +1,6 @@
 package com.dwinovo.numen.core.pathing.execute;
 import com.dwinovo.numen.core.pathing.settings.ScaffoldMaterials;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 import com.dwinovo.numen.core.pathing.moves.AimGeometry;
 
 import java.util.EnumMap;
@@ -429,7 +430,7 @@ public final class ExecHarness implements Movement.ExecutionDelegate {
 
     /** 保证快捷栏里有水桶(坠落接水前备货;背包深处仅 allowInventory 时动用)。 */
     public boolean ensureWaterBucketInHotbar() {
-        return ensureInHotbar(stack -> stack.is(Items.WATER_BUCKET));
+        return ensureInHotbar(ItemCompatibility::isWaterBucket);
     }
 
     private boolean ensureInHotbar(java.util.function.Predicate<ItemStack> what) {

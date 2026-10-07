@@ -9,6 +9,7 @@ import com.dwinovo.numen.core.pathing.moves.MovementHelper;
 import com.dwinovo.numen.core.pathing.moves.MovementState;
 import com.dwinovo.numen.core.pathing.moves.MovementStatus;
 import com.dwinovo.numen.core.pathing.settings.NavSettings;
+import com.dwinovo.numen.core.item.ItemCompatibility;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -286,9 +287,7 @@ final class MovementPlacement {
                 // 这些物品右键不会放置方块,右键时原版走副手放置。
                 for (int i = 0; i < 9; i++) {
                     ItemStack stack = inventory.getItem(i);
-                    if (stack.isEmpty()
-                            || stack.getItem() instanceof net.minecraft.world.item.TieredItem
-                            || stack.getItem() instanceof net.minecraft.world.item.ShearsItem) {
+                    if (ItemCompatibility.isNonConsumptiveMainHand(stack)) {
                         if (select) {
                             inventory.selected = i;
                         }
@@ -346,7 +345,7 @@ final class MovementPlacement {
     /** 执行期霜行者判定:装备有霜行者且目标格是静水源。 */
     static boolean canUseFrostWalker(ServerPlayer player, BlockState state) {
         return frostWalkerLevel(player) != 0
-                && state.getBlock() == Blocks.WATER
+                && MovementHelper.isWater(state)
                 && state.getValue(LiquidBlock.LEVEL) == 0;
     }
 
@@ -384,4 +383,3 @@ final class MovementPlacement {
         return player.getEyePosition();
     }
 }
-

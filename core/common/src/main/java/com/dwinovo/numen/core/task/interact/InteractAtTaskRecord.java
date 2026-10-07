@@ -33,13 +33,21 @@ public final class InteractAtTaskRecord extends TaskRecord {
     public final int holdTicks;
     public final Item item;        // null → use whatever is already in hand; else equip this first
 
+    public final boolean sneak;
+
     public InteractAtTaskRecord(String toolCallId, long deadlineGameTime,
-                                MouseButton button, BlockPos aim, int holdTicks, Item item) {
+                                MouseButton button, BlockPos aim, int holdTicks, Item item, boolean sneak) {
         super(TOOL_NAME, toolCallId, deadlineGameTime);
         this.button = button;
         this.aim = aim != null ? aim.immutable() : null;
         this.holdTicks = holdTicks;
         this.item = item;
+        this.sneak = sneak;
+    }
+
+    public InteractAtTaskRecord(String toolCallId, long deadlineGameTime,
+                                MouseButton button, BlockPos aim, int holdTicks, Item item) {
+        this(toolCallId, deadlineGameTime, button, aim, holdTicks, item, false);
     }
 
     /**
@@ -67,6 +75,7 @@ public final class InteractAtTaskRecord extends TaskRecord {
         return TOOL_NAME + " " + (button == MouseButton.LEFT ? "left" : "right")
                 + (item != null ? " " + BuiltInRegistries.ITEM.getKey(item).getPath() : "")
                 + (aim != null ? " @" + aim.getX() + "," + aim.getY() + "," + aim.getZ() : " (forward)")
+                + (sneak ? " sneak" : "")
                 + (holdTicks != 0 ? " hold=" + holdTicks : "");
     }
 }
