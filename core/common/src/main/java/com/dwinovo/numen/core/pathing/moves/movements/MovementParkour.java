@@ -134,7 +134,7 @@ public class MovementParkour extends Movement {
 
             // 平跳落点:禁落耕地(踩塌);霜行者可冻住水面时也算落点
             BlockState landingOn = context.get(destX, y - 1, destZ);
-            if (!(landingOn.getBlock() instanceof net.minecraft.world.level.block.FarmBlock)
+            if ((!(landingOn.getBlock() instanceof net.minecraft.world.level.block.FarmBlock)
                     && MovementHelper.canWalkOn(context, destX, y - 1, destZ, landingOn))
                     || (Math.min(16, context.frostWalker + 2) >= i
                             && MovementHelper.canUseFrostWalker(context, landingOn))) {
