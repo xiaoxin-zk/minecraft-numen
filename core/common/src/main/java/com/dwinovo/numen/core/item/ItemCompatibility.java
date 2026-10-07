@@ -4,16 +4,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
-import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.CropBlock;
 
 /**
@@ -51,7 +50,7 @@ public final class ItemCompatibility {
     private ItemCompatibility() {}
 
     private static TagKey<Item> tag(String namespace, String path) {
-        return ItemTags.create(new ResourceLocation(namespace, path));
+        return TagKey.create(Registries.ITEM, new ResourceLocation(namespace, path));
     }
 
     public static boolean isShield(ItemStack stack) {
@@ -78,14 +77,13 @@ public final class ItemCompatibility {
     }
 
     public static boolean isWaterBucket(ItemStack stack) {
-        return !stack.isEmpty() && (stack.is(FORGE_WATER_BUCKETS)
-                || stack.is(COMMON_WATER_BUCKETS) || bucketFluid(stack) == Fluids.WATER);
+        return !stack.isEmpty() && (stack.is(Items.WATER_BUCKET)
+                || stack.is(FORGE_WATER_BUCKETS) || stack.is(COMMON_WATER_BUCKETS));
     }
 
     public static boolean isEmptyBucket(ItemStack stack) {
-        return !stack.isEmpty() && (stack.is(FORGE_EMPTY_BUCKETS)
-                || stack.is(COMMON_EMPTY_BUCKETS)
-                || bucketFluid(stack) == Fluids.EMPTY && stack.getItem() instanceof BucketItem);
+        return !stack.isEmpty() && (stack.is(Items.BUCKET)
+                || stack.is(FORGE_EMPTY_BUCKETS) || stack.is(COMMON_EMPTY_BUCKETS));
     }
 
     /**
@@ -97,11 +95,6 @@ public final class ItemCompatibility {
         if (stack.isEmpty()) return true;
         if (stack.getItem() instanceof BlockItem) return false;
         return stack.getItem().getUseDuration(stack) <= 0;
-    }
-
-    private static Fluid bucketFluid(ItemStack stack) {
-        return stack.isEmpty() || !(stack.getItem() instanceof BucketItem bucket)
-                ? Fluids.EMPTY : bucket.getFluid();
     }
 
     /**
